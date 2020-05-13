@@ -1,0 +1,888 @@
+#GOAL: Build machine learning model to predict revenue over the first year for each customer 
+#Needed: 1. Exploratory data analysis 2. feature treatment engineering 3. utilizing learning techniques
+
+#importing libraries 
+import pandas as pd #data science essentials
+import matplotlib.pyplot as plt #essential graphic output
+import seaborn as sns #enhanced graphical output
+import numpy as np
+import statsmodels.formula.api as smf #regression modelling 
+import sklearn.linear_model # linear models
+from sklearn.model_selection import train_test_split # train/test split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler # standard scaler
+from sklearn.neighbors import KNeighborsRegressor # KNN Regression
+from sklearn.ensemble import GradientBoostingRegressor # Gradient Bossting Regression
+from sklearn.ensemble import RandomForestRegressor # RandomForestRegressor
+from sklearn.model_selection import GridSearchCV # CV using Grid Search
+
+#file name
+    
+file = 'Apprentice_Chef_Dataset.xlsx'
+
+#reading the file into python
+chef = pd.read_excel(file)
+
+#Checking how many columns
+chef.columns.value_counts().sum()
+
+#Checking for null values 
+chef.isnull().sum()
+
+#Building base model
+
+#blueprinting model type 
+lm_rev_orders = smf.ols(formula = """REVENUE ~ chef['TOTAL_MEALS_ORDERED']""",
+                       data = chef)
+
+#running data through blueprint
+results = lm_rev_orders.fit()
+
+#printing results
+print(results.summary())
+
+#Observation: 64% of variables aside from Total Meals Ordered explain the changes in revenue
+#This confirms that they are worth analyzing
+
+
+#Visual EDA (histograms)
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.distplot(chef['REVENUE'],
+             bins  = 'fd',
+             color = 'g')
+plt.xlabel('Revenue')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 2)
+sns.distplot(chef['UNIQUE_MEALS_PURCH'],
+             bins  = 15,
+             color = 'g')
+plt.xlabel('Unique Meals Purchased')
+
+plt.subplot(2, 2, 3)
+sns.distplot(chef['CONTACTS_W_CUSTOMER_SERVICE'],
+             bins = 'fd',
+             kde  = True,
+             rug  = False,
+             color = 'b')
+plt.xlabel('Contacting Customer Service')
+
+plt.subplot(2, 2, 4)
+sns.distplot(chef['PRODUCT_CATEGORIES_VIEWED'],
+             bins = 10,
+             color = 'g')
+plt.xlabel('Viewed Product Categories')
+plt.tight_layout()
+
+plt.subplot(2, 2, 1)
+sns.distplot(chef['AVG_TIME_PER_SITE_VISIT'], 
+             bins = 100,
+             kde  = False,
+             rug  = False,
+             color = 'r')
+plt.xlabel('Average Time Per Site Visit')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 2)
+sns.distplot(chef['MOBILE_NUMBER'],
+             bins  = 2,
+             color = 'y')
+plt.xlabel('Mobile Phone') 
+
+plt.subplot(2, 2, 3)
+sns.distplot(chef['CANCELLATIONS_BEFORE_NOON'],
+             bins = 10,
+             color = 'b')
+plt.xlabel('Cancellations before noon')
+
+plt.subplot(2, 2, 4)
+sns.distplot(chef['CANCELLATIONS_BEFORE_NOON'],
+             bins = 10,
+             color = 'r')
+plt.xlabel('Cancellations before noon')
+plt.tight_layout()
+
+plt.subplot(2, 2, 1)
+sns.distplot(chef['CANCELLATIONS_AFTER_NOON'],
+             bins = 10,
+             kde = False,
+             color = 'g')
+plt.xlabel('Cancellations after noon')
+
+plt.subplot(2, 2, 2)
+sns.distplot(chef['TASTES_AND_PREFERENCES'],
+             bins = 2,
+             kde = False,
+             color = 'r')
+plt.xlabel('Tastes and Preferences')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 3)
+sns.distplot(chef['MOBILE_LOGINS'],
+             bins  = 'fd',
+             kde = False,
+             color = 'y')
+plt.xlabel('Mobile Logins')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 4)
+sns.distplot(chef['PC_LOGINS'],
+             bins  = 'fd',
+             kde = False,
+             color = 'r')
+plt.xlabel('PC Logins')
+plt.tight_layout()
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.distplot(chef['WEEKLY_PLAN'],
+             bins  = 'fd',
+             color = 'b')
+plt.xlabel('Weekly Plan Early Deliveries')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 2)
+sns.distplot(chef['LATE_DELIVERIES'],
+             bins  = 'fd',
+             color = 'r')
+plt.xlabel('Late Deliveries')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 3)
+sns.distplot(chef['PACKAGE_LOCKER'],
+             bins  = 'fd',
+             kde = False,
+             color = 'g')
+plt.xlabel('Package Locker')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 4)
+sns.distplot(chef['REFRIGERATED_LOCKER'],
+             kde = False,
+             bins  = 'fd',
+             color = 'y')
+plt.xlabel('Refridgerated Locker')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.distplot(chef['FOLLOWED_RECOMMENDATIONS_PCT'],
+             bins  = 'fd',
+             color = 'r')
+plt.xlabel('Followed Recommendations')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 2)
+sns.distplot(chef['AVG_PREP_VID_TIME'],
+             bins  = 'fd',
+             color = 'b')
+plt.xlabel('Average Preparation Video Time')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 3)
+sns.distplot(chef['LARGEST_ORDER_SIZE'],
+             bins  = 'fd',
+             color = 'g')
+plt.xlabel('Largest Order Size')
+
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 4)
+sns.distplot(chef['MASTER_CLASSES_ATTENDED'],
+             bins  = 'fd',
+             kde = False,
+             color = 'r')
+plt.xlabel('Master Classes Attended')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.distplot(chef['MEDIAN_MEAL_RATING'],
+             bins  = 'fd',
+             kde  = False,
+             color = 'y')
+plt.xlabel('Median Meal Rating')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 2)
+sns.distplot(chef['AVG_CLICKS_PER_VISIT'],
+             bins  = 'fd',
+             color = 'b')
+plt.xlabel('Average Clicks Per Visit')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 3)
+sns.distplot(chef['TOTAL_PHOTOS_VIEWED'],
+             bins  = 'fd',
+             color = 'y')
+plt.xlabel('Total Photos Viewed')
+plt.tight_layout()
+
+
+
+#setting outlier thresholds to ones that need
+
+TOTAL_MEALS_ORDERED_hi           = 280
+UNIQUE_MEALS_PURCH_hi            = 9
+CONTACTS_W_CUSTOMER_SERVICE_hi   = 10
+AVG_TIME_PER_SITE_VISIT_hi       = 250
+CANCELLATIONS_BEFORE_NOON_hi     = 7
+CANCELLATIONS_AFTER_NOON_hi      = 1.5
+MOBILE_LOGINS_hi                 = 6.5
+MOBILE_LOGINS_lo                 = 4.5
+PC_LOGINS_hi                     = 2.5
+PC_LOGINS_lo                     = 0.5
+WEEKLY_PLAN_hi                   = 20
+EARLY_DELIVERIES_hi              = 5
+LATE_DELIVERIES_hi               = 10
+AVG_PREP_VID_TIME_hi             = 300
+LARGEST_ORDER_SIZE_hi            = 6
+MASTER_CLASSES_ATTENDED_hi       = 2
+MEDIAN_MEAL_RATING_hi            = 4.5 
+AVG_CLICKS_PER_VISIT_lo          = 7.5
+TOTAL_PHOTOS_VIEWED_hi           = 470
+REVENUE_hi                       = 5700
+#developing features for outliers
+
+#Unique Meals purchased
+chef['TOTAL_MEALS_ORDERED_HIGH'] = 0
+condition_hi = chef.loc[0:,'TOTAL_MEALS_ORDERED_HIGH'][chef['TOTAL_MEALS_ORDERED_HIGH'] > TOTAL_MEALS_ORDERED_hi]
+
+chef['TOTAL_MEALS_ORDERED_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+#CONTACTS_W_CUSTOMER_SERVICE_hi
+chef['CONTACTS_W_CUSTOMER_SERVICE_HIGH'] = 0
+condition_hi = chef.loc[0:,'CONTACTS_W_CUSTOMER_SERVICE_HIGH'][chef['CONTACTS_W_CUSTOMER_SERVICE_HIGH'] > CONTACTS_W_CUSTOMER_SERVICE_hi]
+
+chef['CONTACTS_W_CUSTOMER_SERVICE_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#CANCELLATIONS_BEFORE_NOON_hi
+chef['CANCELLATIONS_BEFORE_NOON_HIGH'] = 0
+condition_hi = chef.loc[0:,'CANCELLATIONS_BEFORE_NOON_HIGH'][chef['CANCELLATIONS_BEFORE_NOON_HIGH'] > CANCELLATIONS_BEFORE_NOON_hi]
+
+chef['CANCELLATIONS_BEFORE_NOON_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+# CANCELLATIONS_AFTER_NOON
+chef['out_CANCELLATIONS_AFTER_NOON'] = 0
+condition_hi = chef.loc[0:,'out_CANCELLATIONS_AFTER_NOON'][chef['CANCELLATIONS_AFTER_NOON'] > CANCELLATIONS_AFTER_NOON_hi]
+
+chef['out_CANCELLATIONS_AFTER_NOON'].replace(to_replace = condition_hi,
+                                    value      = 1,
+                                    inplace    = True)
+
+# PC_LOGINS
+chef['out_PC_LOGINS'] = 0
+condition_hi = chef.loc[0:,'out_PC_LOGINS'][chef['PC_LOGINS'] > PC_LOGINS_hi]
+condition_lo = chef.loc[0:,'out_PC_LOGINS'][chef['PC_LOGINS'] < PC_LOGINS_lo]
+
+chef['out_PC_LOGINS'].replace(to_replace = condition_hi,
+                                    value      = 1,
+                                    inplace    = True)
+
+chef['out_PC_LOGINS'].replace(to_replace = condition_lo,
+                                    value      = 1,
+                                    inplace    = True)
+
+# MOBILE_LOGINS
+chef['out_MOBILE_LOGINS'] = 0
+condition_hi = chef.loc[0:,'out_MOBILE_LOGINS'][chef['MOBILE_LOGINS'] > MOBILE_LOGINS_hi]
+condition_lo = chef.loc[0:,'out_MOBILE_LOGINS'][chef['MOBILE_LOGINS'] < MOBILE_LOGINS_lo]
+
+chef['out_MOBILE_LOGINS'].replace(to_replace = condition_hi,
+                                    value      = 1,
+                                    inplace    = True)
+
+chef['out_MOBILE_LOGINS'].replace(to_replace = condition_lo,
+                                    value      = 1,
+                                    inplace    = True)
+
+#Unique Meals purchased
+chef['UNIQUE_MEALS_PURCHASED_HIGH'] = 0
+condition_hi = chef.loc[0:,'UNIQUE_MEALS_PURCHASED_HIGH'][chef['UNIQUE_MEALS_PURCH'] > UNIQUE_MEALS_PURCH_hi]
+
+chef['UNIQUE_MEALS_PURCHASED_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#photos viewed
+chef['TOTAL_PHOTOS_VIEWED_HIGH'] = 0
+condition_hi = chef.loc[0:,'TOTAL_PHOTOS_VIEWED_HIGH'][chef['TOTAL_PHOTOS_VIEWED'] > TOTAL_PHOTOS_VIEWED_hi]
+
+chef['TOTAL_PHOTOS_VIEWED_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#master classes attended
+chef['MASTER_CLASSES_ATTENDED_HIGH'] = 0
+condition_hi = chef.loc[0:,'MASTER_CLASSES_ATTENDED_HIGH'][chef['MASTER_CLASSES_ATTENDED'] > MASTER_CLASSES_ATTENDED_hi]
+
+chef['MASTER_CLASSES_ATTENDED_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#avg prep time
+chef['AVG_PREPARATION_TIME_HIGH'] = 0
+condition_hi = chef.loc[0:,'AVG_PREPARATION_TIME_HIGH'][chef['AVG_PREP_VID_TIME'] > AVG_PREP_VID_TIME_hi]
+
+chef['AVG_PREPARATION_TIME_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+# EARLY_DELIVERIES
+chef['out_EARLY_DELIVERIES'] = 0
+condition_hi = chef.loc[0:,'out_EARLY_DELIVERIES'][chef['EARLY_DELIVERIES'] > EARLY_DELIVERIES_hi]
+
+chef['out_EARLY_DELIVERIES'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+#late deliveries
+chef['LATE_DELIVERIES_HIGH'] = 0
+condition_hi = chef.loc[0:,'LATE_DELIVERIES_HIGH'][chef['LATE_DELIVERIES'] > LATE_DELIVERIES_hi]
+
+chef['LATE_DELIVERIES_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#weekly plan deliveries
+chef['WEEKLY_PLAN_DELIVERIES_HIGH'] = 0
+condition_hi = chef.loc[0:,'WEEKLY_PLAN_DELIVERIES_HIGH'][chef['WEEKLY_PLAN'] > WEEKLY_PLAN_hi]
+
+chef['WEEKLY_PLAN_DELIVERIES_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#avg time per visit 
+chef['AVG_TIME_PER_VISIT_HIGH'] = 0
+condition_hi = chef.loc[0:,'AVG_TIME_PER_VISIT_HIGH'][chef['AVG_TIME_PER_SITE_VISIT'] > AVG_TIME_PER_SITE_VISIT_hi]
+
+chef['AVG_TIME_PER_VISIT_HIGH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+# LARGEST_ORDER_SIZE
+chef['out_LARGEST_ORDER_SIZE'] = 0
+condition_hi = chef.loc[0:,'out_LARGEST_ORDER_SIZE'][chef['LARGEST_ORDER_SIZE'] > LARGEST_ORDER_SIZE_hi]
+
+chef['out_LARGEST_ORDER_SIZE'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# MEDIAN_MEAL_RATING
+chef['out_MEDIAN_MEAL_RATING'] = 0
+condition_hi = chef.loc[0:,'out_MEDIAN_MEAL_RATING'][chef['MEDIAN_MEAL_RATING'] > MEDIAN_MEAL_RATING_hi]
+
+chef['out_MEDIAN_MEAL_RATING'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# AVG_CLICKS_PER_VISIT
+chef['out_AVG_CLICKS_PER_VISIT'] = 0
+condition_lo = chef.loc[0:,'out_AVG_CLICKS_PER_VISIT'][chef['AVG_CLICKS_PER_VISIT'] < AVG_CLICKS_PER_VISIT_lo]
+
+chef['out_AVG_CLICKS_PER_VISIT'].replace(to_replace = condition_lo,
+                                 value      = 1,
+                                 inplace    = True)
+
+
+
+chef.columns.value_counts().sum()
+
+
+#Building scatter plots
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['TOTAL_MEALS_ORDERED'],
+                y = chef['REVENUE'],
+                color = 'r')
+plt.xlabel('Total Meals Ordered')
+
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['UNIQUE_MEALS_PURCH'],
+                y = chef['REVENUE'],
+                color = 'g')
+plt.xlabel('Unique Meals Purchased')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['CONTACTS_W_CUSTOMER_SERVICE'],
+                y = chef['REVENUE'],
+                color = 'b')
+plt.xlabel('CONTACTS_W_CUSTOMER_SERVICE')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['PRODUCT_CATEGORIES_VIEWED'],
+                y = chef['REVENUE'],
+                color = 'r')
+plt.xlabel('PRODUCT_CATEGORIES_VIEWED')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['MEDIAN_MEAL_RATING'],
+                y = chef['REVENUE'],
+                color = 'g')
+plt.xlabel('MEDIAN_MEAL_RATING')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['AVG_CLICKS_PER_VISIT'],
+                y = chef['REVENUE'],
+                color = 'b')
+plt.xlabel('AVG_CLICKS_PER_VISIT')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['TOTAL_PHOTOS_VIEWED'],
+                y = chef['REVENUE'],
+                color = 'steelblue')
+plt.xlabel('TOTAL_PHOTOS_VIEWED')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['MASTER_CLASSES_ATTENDED'],
+                y = chef['REVENUE'],
+                color = 'goldenrod')
+plt.xlabel('MASTER_CLASS_ATTENDED')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['LARGEST_ORDER_SIZE'],
+                y = chef['REVENUE'],
+                color = 'mediumspringgreen')
+plt.xlabel('LARGEST_ORDER_SIZE')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['AVG_PREP_VID_TIME'],
+                y = chef['REVENUE'],
+                color = 'darkturquoise')
+plt.xlabel('AVG_PREP_VID_TIME')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['FOLLOWED_RECOMMENDATIONS_PCT'],
+                y = chef['REVENUE'],
+                color = 'r')
+plt.xlabel('FOLLOWED_RECOMMENDATIONS_PCT')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['WEEKLY_PLAN'],
+                y = chef['REVENUE'],
+                color = 'chartreuse')
+plt.xlabel('WEEKLY_PLAN')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['AVG_TIME_PER_SITE_VISIT'],
+                y = chef['REVENUE'],
+                color = 'fuchsia')
+plt.xlabel('AVG_TIME_PER_SITE_VISIT')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['MOBILE_LOGINS'],
+                y = chef['REVENUE'],
+                color = 'fuchsia')
+plt.xlabel('MOBILE_LOGINS')
+
+fig, ax = plt.subplots(figsize = (10, 8))
+plt.subplot(2, 2, 1)
+sns.scatterplot(x = chef['EARLY_DELIVERIES'],
+                y = chef['REVENUE'],
+                color = 'fuchsia')
+plt.xlabel('EARLY_DELIVERIES')
+
+#Obvious positive correlations with revenue:
+#total meals ordered
+#Photos viewed
+
+
+
+#Setting trend-based thresholds
+
+TOTAL_MEALS_ORDERED_hi           = 200
+UNIQUE_MEALS_PURCH_hi            = 9
+CONTACTS_W_CUSTOMER_SERVICE_hi   = 10
+AVG_TIME_PER_SITE_VISIT_hi       = 250
+MOBILE_LOGINS_hi                 = 6.5
+MOBILE_LOGINS_lo                 = 4.5
+WEEKLY_PLAN_hi                   = 18
+AVG_PREP_VID_TIME_hi             = 270
+LARGEST_ORDER_SIZE_hi            = 6
+MASTER_CLASSES_ATTENDED_hi       = 2
+MEDIAN_MEAL_RATING_hi            = 4.5 
+AVG_CLICKS_PER_VISIT_lo          = 8
+TOTAL_PHOTOS_VIEWED_hi           = 280
+EARLY_DELIVERIES_hi              = 5
+
+#Threshold for revenue
+REVENUE_hi = 5500
+
+#developing columns for the outliers
+
+
+# TOTAL_MEALS_ORDERED
+chef['out_TOTAL_MEALS_ORDERED'] = 0
+condition_hi = chef.loc[0:,'out_TOTAL_MEALS_ORDERED'][chef['TOTAL_MEALS_ORDERED'] > TOTAL_MEALS_ORDERED_hi]
+
+chef['out_TOTAL_MEALS_ORDERED'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+#UNIQUE_MEALS
+chef['out_UNIQUE_MEALS_PURCH'] = 0
+condition_hi = chef.loc[0:,'out_UNIQUE_MEALS_PURCH'][chef['UNIQUE_MEALS_PURCH'] > UNIQUE_MEALS_PURCH_hi]
+
+chef['out_UNIQUE_MEALS_PURCH'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+#CONTACTS_W_CUSTOMER_SERVICE
+chef['out_CONTACTS_W_CUSTOMER_SERVICE'] = 0
+condition_hi = chef.loc[0:,'out_CONTACTS_W_CUSTOMER_SERVICE'][chef['CONTACTS_W_CUSTOMER_SERVICE'] > CONTACTS_W_CUSTOMER_SERVICE_hi]
+
+chef['out_CONTACTS_W_CUSTOMER_SERVICE'].replace(to_replace = condition_hi,
+                                value      = 1,
+                                inplace    = True)
+
+# AVG_TIME_PER_SITE_VISIT
+chef['out_AVG_TIME_PER_SITE_VISIT'] = 0
+condition_hi = chef.loc[0:,'out_AVG_TIME_PER_SITE_VISIT'][chef['AVG_TIME_PER_SITE_VISIT'] > AVG_TIME_PER_SITE_VISIT_hi]
+
+chef['out_AVG_TIME_PER_SITE_VISIT'].replace(to_replace = condition_hi,
+                                    value      = 1,
+                                    inplace    = True)
+
+# MOBILE_LOGINS
+chef['out_MOBILE_LOGINS'] = 0
+condition_hi = chef.loc[0:,'out_MOBILE_LOGINS'][chef['out_MOBILE_LOGINS'] > MOBILE_LOGINS_hi]
+
+chef['out_MOBILE_LOGINS'].replace(to_replace = condition_hi,
+                                    value      = 1,
+                                    inplace    = True)
+# WEEKLY_PLAN
+chef['out_WEEKLY_PLAN'] = 0
+condition_hi = chef.loc[0:,'out_WEEKLY_PLAN'][chef['WEEKLY_PLAN'] > WEEKLY_PLAN_hi]
+
+chef['out_WEEKLY_PLAN'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# EARLY_DELIVERIES
+chef['out_EARLY_DELIVERIES'] = 0
+condition_hi = chef.loc[0:,'out_EARLY_DELIVERIES'][chef['EARLY_DELIVERIES'] > EARLY_DELIVERIES_hi]
+
+chef['out_EARLY_DELIVERIES'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# AVG_PREP_VID_TIME
+chef['out_AVG_PREP_VID_TIME'] = 0
+condition_hi = chef.loc[0:,'out_AVG_PREP_VID_TIME'][chef['AVG_PREP_VID_TIME'] > AVG_PREP_VID_TIME_hi]
+
+chef['out_AVG_PREP_VID_TIME'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# LARGEST_ORDER_SIZE
+chef['out_LARGEST_ORDER_SIZE'] = 0
+condition_hi = chef.loc[0:,'out_LARGEST_ORDER_SIZE'][chef['LARGEST_ORDER_SIZE'] > LARGEST_ORDER_SIZE_hi]
+
+chef['out_LARGEST_ORDER_SIZE'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+# MASTER_CLASSES_ATTENDED
+chef['out_MASTER_CLASSES_ATTENDED'] = 0
+condition_hi = chef.loc[0:,'out_MASTER_CLASSES_ATTENDED'][chef['MASTER_CLASSES_ATTENDED'] > MASTER_CLASSES_ATTENDED_hi]
+
+chef['out_MASTER_CLASSES_ATTENDED'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# MEDIAN_MEAL_RATING
+chef['out_MEDIAN_MEAL_RATING'] = 0
+condition_hi = chef.loc[0:,'out_MEDIAN_MEAL_RATING'][chef['MEDIAN_MEAL_RATING'] > MEDIAN_MEAL_RATING_hi]
+
+chef['out_MEDIAN_MEAL_RATING'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+# AVG_CLICKS_PER_VISIT
+chef['out_AVG_CLICKS_PER_VISIT'] = 0
+condition_lo = chef.loc[0:,'out_AVG_CLICKS_PER_VISIT'][chef['AVG_CLICKS_PER_VISIT'] < AVG_CLICKS_PER_VISIT_lo]
+
+chef['out_AVG_CLICKS_PER_VISIT'].replace(to_replace = condition_lo,
+                                 value      = 1,
+                                 inplace    = True)
+
+# TOTAL_PHOTOS_VIEWED
+chef['out_TOTAL_PHOTOS_VIEWED'] = 0
+condition_hi = chef.loc[0:,'out_TOTAL_PHOTOS_VIEWED'][chef['TOTAL_PHOTOS_VIEWED'] > TOTAL_PHOTOS_VIEWED_hi]
+
+chef['out_TOTAL_PHOTOS_VIEWED'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+# REVENUE
+chef['out_REVENUE'] = 0
+condition_hi = chef.loc[0:,'out_REVENUE'][chef['REVENUE'] > REVENUE_hi]
+
+chef['out_REVENUE'].replace(to_replace = condition_hi,
+                                 value      = 1,
+                                 inplace    = True)
+
+chef = pd.DataFrame(chef)
+
+
+chef.info()
+
+# saving feature-rich dataset in Excel
+chef.to_excel('chef_feature_rich.xlsx',
+                 index = False)
+
+#Checking counts for important caterogical variables
+print(f"""
+Cross Sell Success
+------------------
+{chef['CROSS_SELL_SUCCESS'].value_counts()}
+
+Mobile Number
+------------------
+{chef['MOBILE_NUMBER'].value_counts()}
+
+Package Locker
+------------------
+{chef['PACKAGE_LOCKER'].value_counts()}
+
+Refrigerated Locker
+------------------
+{chef['REFRIGERATED_LOCKER'].value_counts()}
+
+Median Meal Rating 
+------------------
+{chef['MEDIAN_MEAL_RATING'].value_counts()}
+
+Tastes and Preferences
+------------------
+{chef['TASTES_AND_PREFERENCES'].value_counts()}
+""")
+
+#Company needs to collect some customer mobile numbers/ fix their registration system
+#Cross selling works, but how can they convince those 625?
+#Most meals are 3/5 rating.. contact the 4/5 and 5/5 ratings to see what they like. Contact the 1/5 and 2/5s to see what they don't like.
+
+
+#Defining function for categorical boxplots
+
+def categorical_boxplots(response, cat_var, data):
+    """This function is for categorical variables
+    
+    Parameters
+    ----------
+    response : str, response variable
+    cat_var : str, categorical variable
+    data : DataFrame of the response and categorical variables
+    """
+    
+    data.boxplot(column = response,
+                    by = cat_var,
+                    vert = False,
+                    patch_artist = False,
+                    meanline = True,
+                    showmeans = True)
+    plt.suptitle("")
+    plt.show()
+
+#calling function on TASTES AND PREFERENCES variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'TASTES_AND_PREFERENCES',
+                        data = chef)
+
+#calling function on MEDIAN MEAL RATING variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'MEDIAN_MEAL_RATING',
+                        data = chef)
+
+
+#calling function on REFRIGERATED_LOCKER variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'REFRIGERATED_LOCKER',
+                        data = chef)
+
+#calling function on PACKAGE_LOCKER variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'PACKAGE_LOCKER',
+                        data = chef)
+
+#calling function on MOBILE_NUMBER variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'MOBILE_NUMBER',
+                        data = chef)
+
+#calling function on CROSS_SELL_SUCCESS variable
+categorical_boxplots(response = 'REVENUE',
+                        cat_var = 'CROSS_SELL_SUCCESS',
+                        data = chef)
+
+
+#Creating df_corr
+df_corr = chef.corr().round(2)
+
+#Assigning REVENUE to df_corr
+print(df_corr.loc['REVENUE'].sort_values(ascending = False))
+
+# declaring set of x-variables
+x_var = ['AVG_PREP_VID_TIME','MEDIAN_MEAL_RATING','TOTAL_MEALS_ORDERED',
+         'TOTAL_PHOTOS_VIEWED','TOTAL_PHOTOS_VIEWED','MASTER_CLASSES_ATTENDED',
+         'LARGEST_ORDER_SIZE','AVG_PREPARATION_TIME_HIGH','TOTAL_PHOTOS_VIEWED_HIGH',
+         'out_LARGEST_ORDER_SIZE', 'out_TOTAL_PHOTOS_VIEWED',
+         'out_TOTAL_MEALS_ORDERED','out_AVG_PREP_VID_TIME',
+         'AVG_TIME_PER_SITE_VISIT', 'UNIQUE_MEALS_PURCHASED_HIGH','UNIQUE_MEALS_PURCHASED_HIGH',
+         'AVG_CLICKS_PER_VISIT','out_CONTACTS_W_CUSTOMER_SERVICE']
+
+
+# Preparing a DataFrame to scale the data and use for train/test split
+chef_data   = chef.loc[ : , x_var]
+
+
+# Preparing the target variable
+chef_target = np.log(chef.loc[:, 'REVENUE'])
+
+# running train/test split again
+X_train, X_test, y_train, y_test = train_test_split(
+            chef_data,
+            chef_target,
+            test_size = 0.25,
+            random_state = 222)
+
+
+# formatting each explanatory variable for statsmodels
+for val in chef_data:
+    print(f"chef['{val}'] +")
+
+#building a full model
+
+#blueprinting model type
+lm_full = smf.ols(formula = """chef['REVENUE'] ~ chef['AVG_PREP_VID_TIME'] +
+chef['MEDIAN_MEAL_RATING'] +
+chef['TOTAL_MEALS_ORDERED'] +
+chef['TOTAL_PHOTOS_VIEWED'] +
+chef['TOTAL_PHOTOS_VIEWED'] +
+chef['MASTER_CLASSES_ATTENDED'] +
+chef['LARGEST_ORDER_SIZE'] +
+chef['AVG_PREPARATION_TIME_HIGH'] +
+chef['TOTAL_PHOTOS_VIEWED_HIGH'] +
+chef['out_LARGEST_ORDER_SIZE'] +
+chef['out_TOTAL_PHOTOS_VIEWED'] +
+chef['out_TOTAL_MEALS_ORDERED'] +
+chef['out_AVG_PREP_VID_TIME'] +
+chef['AVG_TIME_PER_SITE_VISIT'] +
+chef['UNIQUE_MEALS_PURCHASED_HIGH'] +
+chef['UNIQUE_MEALS_PURCHASED_HIGH'] +
+chef['AVG_CLICKS_PER_VISIT'] +
+chef['out_CONTACTS_W_CUSTOMER_SERVICE'] """,
+                                data = chef)
+
+#telling python to run data through blueprint
+results_full = lm_full.fit()
+
+#printing the results
+results_full.summary()
+
+# Linear Model
+# INSTANTIATING a model object
+lr = LinearRegression()
+
+
+# FITTING to the training data
+lr_fit = lr.fit(X_train, y_train)
+
+
+# PREDICTING on new data
+lr_pred = lr_fit.predict(X_test)
+
+
+# SCORING the results
+print('Training Score:', lr.score(X_train, y_train).round(4))
+print('Testing Score:',  lr.score(X_test, y_test).round(4))
+
+
+# saving scoring data for future use
+lr_train_score = lr.score(X_train, y_train).round(4)
+lr_test_score  = lr.score(X_test, y_test).round(4)
+
+# Ridge Model with CV and parameter tuning (alpha)
+# INSTANTIATING a model object
+ridge_model = sklearn.linear_model.RidgeCV(alphas=[1e-3, 1e-2, 1e-1, 1, 10], cv=3)
+
+# FITTING the training data
+ridge_fit = ridge_model.fit(X_train, y_train)
+
+
+# PREDICTING on new data
+ridge_pred = ridge_model.predict(X_test)
+
+print('Training Score:', ridge_model.score(X_train, y_train).round(4))
+print('Testing Score:',  ridge_model.score(X_test, y_test).round(4))
+print('Alpha:', ridge_model.alpha_)
+
+# saving scoring data for future use
+ridge_train_score = ridge_model.score(X_train, y_train).round(4)
+ridge_test_score  = ridge_model.score(X_test, y_test).round(4)
+
+# Gradient Boosting Model
+# Instantiate a GradientBoostingRegressor
+gbt = GradientBoostingRegressor(n_estimators=300, max_depth=2, random_state=222)
+
+# Fit 'gbt' to the training set
+gbt.fit(X_train, y_train)
+
+# Predict the test set labels
+gbt_pred = gbt.predict(X_test)
+
+print('Training Score:', gbt.score(X_train, y_train).round(4))
+print('Testing Score:',  gbt.score(X_test, y_test).round(4))
+
+
+# saving scoring data for future use
+gbt_train_score = gbt.score(X_train, y_train).round(4)
+gbt_test_score  = gbt.score(X_test, y_test).round(4)
+
+# Random Forrest Model
+# Instantiate a random forests regressor 'rf'
+rf = RandomForestRegressor(random_state= 222)
+
+# Fit 'grid_rf' to the training set
+rf.fit(X_train, y_train)
+
+# Predict the test set labels
+rf_pred = rf.predict(X_test)
+
+print('Training Score:', rf.score(X_train, y_train).round(4))
+print('Testing Score:',  rf.score(X_test, y_test).round(4))
+
+
+# saving scoring data for future use
+rf_train_score = rf.score(X_train, y_train).round(4)
+rf_test_score  = rf.score(X_test, y_test).round(4)
+
+# Model Performance
+
+print(f"""
+Model                 Train Score      Test Score
+----------------      ----------       ----------
+Linear                {lr_train_score}           {lr_test_score}
+Ridge                 {ridge_train_score}           {ridge_test_score}
+Gradient Boosting     {gbt_train_score}           {gbt_test_score}
+Random Forrest        {rf_train_score}           {rf_test_score}
+
+OLS R-Squared = 0.619
+
+""")
+
+
